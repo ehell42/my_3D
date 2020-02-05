@@ -1,62 +1,83 @@
-#include <unistd.h>
-#include <math.h>
-#include <stdlib.h>
-#include "mlx.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: alexzudin <alexzudin@student.42.fr>        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2020/01/27 13:17:18 by aguiller          #+#    #+#             */
+/*   Updated: 2020/01/31 19:46:53 by alexzudin        ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-struct  s_koord
-{
-    int x;
-    int y;
-};
+#include "fdf.h"
 
-void brezen_alg(struct s_koord point1, struct s_koord point2, void *mlx_ptr, void *win_ptr)
+int		checkarg(int argc, char **argv)
 {
-    int err;
-    int diry;
-    struct s_koord point;
-  
-    point = point1;
-    err = 0;
-    if (point2.y - point1.y >= 0)
-        diry = 1;
-    if (point2.y - point1.y < 0)
-        diry = -1;
-    while (point.x <= point2.x)
-    {
-        mlx_pixel_put(mlx_ptr, win_ptr, point.x, point.y, 0xFFFFFF);
-        err = err + abs(point1.y - point2.y) + 1;
-        if (err >= abs(point1.x - point2.x) + 1)
-        {
-            point.y = point.y + diry;
-            err = err - (abs(point1.x - point2.x) + 1);
-        }
-        point.x++;
-    }
+	int fd;
+
+	if (argc <= 1)
+	{
+		ft_putendl("Usage : ./fdf <filename> [ case_size z_size ]");
+		return (0);
+	}
+	if (argc > 4)
+	{
+		ft_putendl("Usage : ./fdf <filename> [ case_size z_size ]");
+		return (0);
+	}
+	fd = open(argv[1], O_RDWR);
+	if (fd <= 0)
+	{
+		ft_putendl("Could not to open the file");
+		return (0);
+	}
+	return (fd);
 }
 
-
-
-int main()
+int err()
 {
-    void    *mlx_ptr;
-    void    *win_ptr;
-    int     i;
-    struct s_koord point1;
-    point1.x = 0;
-    point1.y = 15;
-    struct s_koord point2;
-    point2.x = 300;
-    point2.y = 200;
-    struct s_koord mass[9];
-    while (i != 9)
-    {
-        mass[i].x = i;
-        mass[i].y = i;
-    }
+	ft_putendl("error");
+	return (0);
+}
 
-    mlx_ptr = mlx_init();
-    win_ptr = mlx_new_window(mlx_ptr, 500, 500, "mlx 42");
-    brezen_alg(point1, point2, mlx_ptr, win_ptr);
-    mlx_string_put(mlx_ptr,win_ptr, 250, 250, 0xFFFFFF, "mass");
-    mlx_loop(mlx_ptr);
+int working(int fd, int len_x, int len_y)
+{
+	t_app	*app;
+	t_koord **massive;
+
+	massive = read_tomass(len_x, len_y, fd);
+	app = app_init(massive, len_x, len_y);
+	to_iso(massive, app);
+    try_to_print(massive, app);
+	setuper(app);
+	mlx_loop(app->mlx_ptr);
+	return (0);
+
+}
+
+int		main(int argc, char **argv)
+{
+	int		fd;
+	char	*line;
+	int		len_x;
+	int		len_y;
+	
+	line = NULL;
+	if ((fd = checkarg(argc, argv)) == 0)
+		return (0);
+	if ((len_y = valid_onlydigits(fd)) < 0)
+		return(err());
+	if (close(fd) < 0)
+		return(err());
+	if ((fd = checkarg(argc, argv)) < 0)
+		return(err());
+	if ((len_x = valid_for_count(fd, line)) < 0)
+		return(err());
+	if (close(fd) < 0)
+		return(err());
+	if ((fd = checkarg(argc, argv)) < 0)
+		return(err());
+	working(fd, len_x, len_y);
+	return (0);
 }
