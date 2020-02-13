@@ -3,153 +3,98 @@
 /*                                                        :::      ::::::::   */
 /*   algos.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alexzudin <alexzudin@student.42.fr>        +#+  +:+       +#+        */
+/*   By: ehell <ehell@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/25 18:39:04 by ehell             #+#    #+#             */
-/*   Updated: 2020/01/31 19:56:44 by alexzudin        ###   ########.fr       */
+/*   Updated: 2020/02/07 18:17:20 by ehell            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "fdf.h"
 
-t_koord **malloc_massiv(int x, int y)
+t_koord	**malloc_massiv(int x, int y)
 {
-    int         i;
-    t_koord     **massive;
-
-    i = 0;
-    if (!(massive = (t_koord**)(malloc(sizeof(t_koord**) * y))))
-        return (NULL);
-    while (i < y)
-    {
-        if (!(massive[i] = (t_koord*)(malloc(sizeof(t_koord) * x))))
-            return (NULL);
-        i++;
-    }
-    return (massive);
-}
-
-void parser(int fd, t_koord **massive)
-{
-    char *line;
-    int i;
-    int j;
-    int k;
-
-    i = 0;
-    while (get_next_line(fd, &line))
-    {
-        j = 0;
-        k = 0;
-        while (line[j])
-        {
-            if (line[j] != ' ')
-            {
-                massive[i][k].old_z = ft_atoi(&(line[j]));
-                k++;
-                while (line[j] != ' ' && line[j])
-                    j++;
-            }
-            else
-                j++;
-        }
-        i++;
-        free(line);
-    }
-}
-
-void find_min_max(t_koord **massive, t_app *app)
-{
-	int	i;
-	int	j;
-	int	min;
-	int	max;
+	int		i;
+	t_koord	**massive;
 
 	i = 0;
-	min = 0;
-	max = 0;
-	while(i < app->max_y)
+	if (!(massive = (t_koord**)(malloc(sizeof(t_koord**) * y))))
+		return (NULL);
+	while (i < y)
+	{
+		if (!(massive[i] = (t_koord*)(malloc(sizeof(t_koord) * x))))
+			return (NULL);
+		i++;
+	}
+	return (massive);
+}
+
+void	parser(int fd, t_koord **massive)
+{
+	char	*line;
+	int		i;
+	int		j;
+	int		k;
+
+	i = 0;
+	while (get_next_line(fd, &line))
 	{
 		j = 0;
-		while(j < app->max_x)
+		k = 0;
+		while (line[j])
 		{
+			if (line[j] != ' ')
+			{
+				massive[i][k].old_z = ft_atoi(&(line[j]));
+				k++;
+				while (line[j] != ' ' && line[j])
+					j++;
+			}
+			else
+				j++;
+		}
+		i++;
+		free(line);
+	}
+}
 
-			if (massive[i][j].old_z < min)
-				min = massive[i][j].old_z;
-			if (massive[i][j].old_z > max)
-				max = massive[i][j].old_z;
+void	try_to_print(t_koord **massive, t_app *app)
+{
+	int i;
+	int j;
+
+	i = 0;
+	ft_bzero(app->dadr, (app->width) * app->height * (app->bpp / 8));
+	while (i < app->max_y)
+	{
+		j = 0;
+		while (j < app->max_x)
+		{
+			if (j + 1 < app->max_x)
+				draw(massive[i][j], massive[i][j + 1], app);
+			if (i + 1 < app->max_y)
+				draw(massive[i][j], massive[i + 1][j], app);
 			j++;
 		}
 		i++;
 	}
-	app->z_min = min;
-	app->z_max = max;
+	mlx_put_image_to_window(app->mlx_ptr, app->win_ptr, app->im_ptr, 200, 0);
 }
 
-void try_to_print(t_koord **massive, t_app *app)
+t_koord	**read_tomass(int len_x, int len_y, int fd)
 {
-    int i;
-    int j;
+	t_koord **massive;
+	int		i;
+	int		j;
 
-    i = 0;
-    app->im_ptr = mlx_new_image(app->mlx_ptr, app->max_x, app->max_y);
-    while(i < app->max_y )
-    {
-        j = 0;
-        while(j < app->max_x)
-        {
-            if(j + 1 < app->max_x)
-                draw(massive[i][j], massive[i][j + 1], app);
-            if (i + 1 < app->max_y)
-                draw(massive[i][j], massive[i + 1][j], app);
-            j++;
-        }
-        i++;
-    }
+	i = 0;
+	j = 0;
+	massive = malloc_massiv(len_x, len_y);
+	parser(fd, massive);
+	return (massive);
 }
 
-t_koord **read_tomass(int len_x, int len_y, int fd)
+void	setuper(t_app *app)
 {
-    t_koord **massive;
-
-    massive = malloc_massiv(len_x, len_y);
-    parser(fd, massive); 
-    return (massive);
-}
-
-int event_key(int key, t_app *app)
-{
-    app->height = 500;
-    if (key == 53)
-        exit(0);
-    if (key == 35)
-    {
-        erease(app);
-        to_paralell(app->massive, app);
-        try_to_print(app->massive, app);
-    }
-    if(key == 34)
-    {
-        erease(app);
-        to_iso(app->massive, app);
-        try_to_print(app->massive, app);
-    }
-    return (0);
-}
-
-
-/*new_image / clear_image и тд*/
-
-/*
-void erease(t_app *app)
-{
-    app->color = 0;
-    try_to_print(app->massive, app);
-    app->color = 0xFFFFFF;
-}
-*/
-
-void setuper(t_app *app)
-{
-    mlx_key_hook(app->win_ptr, event_key, app);
+	mlx_key_hook(app->win_ptr, event_key, app);
 }
